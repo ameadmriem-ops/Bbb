@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">AI Smart</string>
+    <string name="tagline">مساعدك الذكي الفائق</string>
+    <string name="nav_chat">المحادثة</string>
+    <string name="nav_tools">الأدوات</string>
+    <string name="nav_images">توليد الصور</string>
+    <string name="nav_profile">الحساب</string>
+    <string name="nav_admin">لوحة الإدارة</string>
+    <string name="new_chat">محادثة جديدة</string>
+    <string name="ask_anything">اكتب سؤالك أو اطلب أي مساعدة...</string>
+    <string name="send">إرسال</string>
+    <string name="stop">إيقاف</string>
+    <string name="retry">إعادة المحاولة</string>
+    <string name="upgrade_premium">ترقية إلى Premium</string>
+    <string name="premium_badge">PREMIUM</string>
+    <string name="free_badge">FREE</string>
+</resources>

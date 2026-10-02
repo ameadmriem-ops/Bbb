@@ -1,0 +1,6 @@
+{
+  "name": "AI Smart",
+  "description": "تطبيق ذكاء اصطناعي احترافي وحديث - محادثة ذكية، توليد صور، أدوات كتابة وبرمجة وترجمة، إدارة اشتراكات ولوحة تحكم متقدمة.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
