@@ -152,6 +152,8 @@ fun ChatInputArea(
                     )
                 }
 
+                val canSend = text.isNotBlank() || attachmentUri != null
+
                 // Text field
                 TextField(
                     value = text,
@@ -177,7 +179,12 @@ fun ChatInputArea(
                         disabledIndicatorColor = Color.Transparent
                     ),
                     shape = RoundedCornerShape(20.dp),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default)
+                    keyboardOptions = KeyboardOptions(imeAction = if (canSend) ImeAction.Send else ImeAction.Default),
+                    keyboardActions = KeyboardActions(onSend = {
+                        if (canSend && !isLoading) {
+                            onSend()
+                        }
+                    })
                 )
 
                 Spacer(modifier = Modifier.width(4.dp))
@@ -216,7 +223,6 @@ fun ChatInputArea(
                         )
                     }
                 } else {
-                    val canSend = text.isNotBlank() || attachmentUri != null
                     IconButton(
                         onClick = onSend,
                         enabled = canSend,

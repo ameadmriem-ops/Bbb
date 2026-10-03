@@ -6,7 +6,10 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -58,6 +61,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AISmartMainApp(
     viewModel: MainViewModel,
@@ -107,10 +111,28 @@ fun AISmartMainApp(
     val searchStatus by viewModel.searchStatus.collectAsStateWithLifecycle()
     val knowledgeList by viewModel.allKnowledge.collectAsStateWithLifecycle()
 
+    val billingProducts by viewModel.billingProducts.collectAsStateWithLifecycle()
+    val isPurchasing by viewModel.isPurchasing.collectAsStateWithLifecycle()
+    val billingMessage by viewModel.billingMessage.collectAsStateWithLifecycle()
+    val credits by viewModel.credits.collectAsStateWithLifecycle()
+    val subscriptionPlan by viewModel.subscriptionPlan.collectAsStateWithLifecycle()
+
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val activity = context as? android.app.Activity
+
+    androidx.compose.runtime.LaunchedEffect(billingMessage) {
+        billingMessage?.let { msg ->
+            android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_LONG).show()
+            viewModel.clearBillingMessage()
+        }
+    }
+
     val currentConversation = conversations.find { it.id == currentConvId }
+    val isImeVisible = WindowInsets.isImeVisible
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             if (currentDestination != AppNavDestination.ADMIN) {
                 val screenTitle = when (currentDestination) {
@@ -137,11 +159,13 @@ fun AISmartMainApp(
             }
         },
         bottomBar = {
-            AISmartBottomNav(
-                currentDestination = currentDestination,
-                onNavigate = { currentDestination = it },
-                isAdmin = currentUser?.isAdmin == true
-            )
+            if (!isImeVisible) {
+                AISmartBottomNav(
+                    currentDestination = currentDestination,
+                    onNavigate = { currentDestination = it },
+                    isAdmin = currentUser?.isAdmin == true
+                )
+            }
         }
     ) { innerPadding ->
         androidx.compose.foundation.layout.Box(
@@ -197,9 +221,23 @@ fun AISmartMainApp(
                         dailyImagesUsed = dailyImagesUsed,
                         maxDailyMessages = adminStats.freeDailyMessageLimit,
                         maxDailyImages = adminStats.freeDailyImageLimit,
+                        credits = credits,
+                        subscriptionPlan = subscriptionPlan,
                         isDarkTheme = isDarkTheme,
                         onToggleTheme = onToggleTheme,
                         onUpgradeClick = { isPaywallOpen = true },
+                        onRestorePurchases = {
+                            viewModel.restorePurchases { hasSub ->
+                                android.widget.Toast.makeText(
+                                    context,
+                                    if (hasSub) "تمت استعادة اشتراك Pro بنجاح" else "لا توجد مشتريات نشطة سابقة",
+                                    android.widget.Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        },
+                        onManageSubscriptions = {
+                            activity?.let { viewModel.openManageSubscriptions(it) }
+                        },
                         onAdminClick = { currentDestination = AppNavDestination.ADMIN },
                         onMakeAdmin = { viewModel.makeAdmin() },
                         onLogout = { viewModel.logout() }
@@ -235,13 +273,29 @@ fun AISmartMainApp(
             onDeleteConversation = { id -> viewModel.deleteConversation(id) }
         )
 
-        // Upgrade / Paywall dialog
+        // Upgrade / Paywall dialog with Google Play Billing integration
         PaywallDialog(
             isOpen = isPaywallOpen,
             onDismiss = { isPaywallOpen = false },
-            onUpgradeSuccess = {
-                viewModel.upgradeToPremium()
-                isPaywallOpen = false
+            billingProducts = billingProducts,
+            isPremium = isPremium,
+            currentCredits = credits,
+            subscriptionPlan = subscriptionPlan,
+            isPurchasing = isPurchasing,
+            onPurchaseProduct = { productId ->
+                activity?.let { viewModel.purchaseProduct(it, productId) }
+            },
+            onRestorePurchases = {
+                viewModel.restorePurchases { hasSub ->
+                    android.widget.Toast.makeText(
+                        context,
+                        if (hasSub) "تمت استعادة اشتراك Pro بنجاح" else "لا توجد مشتريات نشطة سابقة",
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
+                }
+            },
+            onManageSubscriptions = {
+                activity?.let { viewModel.openManageSubscriptions(it) }
             }
         )
     }

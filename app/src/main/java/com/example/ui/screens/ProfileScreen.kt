@@ -69,9 +69,13 @@ fun ProfileScreen(
     dailyImagesUsed: Int,
     maxDailyMessages: Int,
     maxDailyImages: Int,
+    credits: Int = 0,
+    subscriptionPlan: String? = null,
     isDarkTheme: Boolean,
     onToggleTheme: () -> Unit,
     onUpgradeClick: () -> Unit,
+    onRestorePurchases: () -> Unit = {},
+    onManageSubscriptions: () -> Unit = {},
     onAdminClick: () -> Unit,
     onMakeAdmin: () -> Unit,
     onLogout: () -> Unit
@@ -241,57 +245,126 @@ fun ProfileScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Upgrade Card (if free)
-        if (user?.isPremium != true) {
-            Surface(
-                onClick = onUpgradeClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("profile_upgrade_card"),
-                shape = RoundedCornerShape(18.dp),
-                color = AiGoldPremium.copy(alpha = 0.15f),
-                border = androidx.compose.foundation.BorderStroke(1.5.dp, AiGoldPremium)
-            ) {
+        // Google Play Billing Status & Credits Card
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(18.dp),
+            color = if (user?.isPremium == true) AiGoldPremium.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceVariant,
+            border = androidx.compose.foundation.BorderStroke(1.5.dp, if (user?.isPremium == true) AiGoldPremium else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
                 Row(
-                    modifier = Modifier.padding(16.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(CircleShape)
-                            .background(AiGoldPremium.copy(alpha = 0.25f)),
-                        contentAlignment = Alignment.Center
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(if (user?.isPremium == true) AiGoldPremium.copy(alpha = 0.25f) else AiPrimaryCyan.copy(alpha = 0.2f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = if (user?.isPremium == true) Icons.Default.Star else Icons.Default.AutoAwesome,
+                                contentDescription = null,
+                                tint = if (user?.isPremium == true) AiGoldPremium else AiPrimaryCyan,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Column {
+                            Text(
+                                text = if (user?.isPremium == true) {
+                                    if (subscriptionPlan?.contains("yearly") == true) "اشتراك Pro سنوي نشط" else "اشتراك Pro شهري نشط"
+                                } else "الخطة المجانية",
+                                fontWeight = FontWeight.Black,
+                                fontSize = 15.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = if (user?.isPremium == true) "مفعل عبر Google Play • غير محدود" else "ميزات أساسية مع قيود يومية",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    // Credits badge
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = AiPrimaryCyan.copy(alpha = 0.15f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, AiPrimaryCyan.copy(alpha = 0.4f))
                     ) {
-                        Icon(imageVector = Icons.Default.Star, contentDescription = null, tint = AiGoldPremium)
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "💎 $credits نقطة",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = AiPrimaryCyan
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (user?.isPremium == true) {
+                        Button(
+                            onClick = onManageSubscriptions,
+                            modifier = Modifier.weight(1f).height(42.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurface)
+                        ) {
+                            Text(text = "إدارة الاشتراك", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                    } else {
+                        Button(
+                            onClick = onUpgradeClick,
+                            modifier = Modifier.weight(1f).height(42.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = AiGoldPremium, contentColor = Color.Black)
+                        ) {
+                            Text(text = "ترقية إلى Pro", fontSize = 12.sp, fontWeight = FontWeight.Black)
+                        }
                     }
 
-                    Spacer(modifier = Modifier.width(14.dp))
-
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "ترقية إلى AI Smart Premium",
-                            fontWeight = FontWeight.Black,
-                            fontSize = 15.sp,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "رسائل وتوليد صور بلا حدود وبدون إعلانات",
-                            fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    Button(
+                        onClick = onUpgradeClick,
+                        modifier = Modifier.weight(1f).height(42.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = AiPrimaryCyan, contentColor = Color.Black)
+                    ) {
+                        Text(text = "شراء Credits 💎", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
+                }
 
-                    Icon(
-                        imageVector = Icons.Default.AutoAwesome,
-                        contentDescription = null,
-                        tint = AiGoldPremium,
-                        modifier = Modifier.size(20.dp)
+                Spacer(modifier = Modifier.height(8.dp))
+
+                TextButton(
+                    onClick = onRestorePurchases,
+                    modifier = Modifier.fillMaxWidth().height(36.dp)
+                ) {
+                    Text(
+                        text = "استعادة مشتريات Google Play (Restore)",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         // Settings items
         Surface(

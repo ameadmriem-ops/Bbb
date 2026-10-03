@@ -42,6 +42,9 @@ class AISmartApp : Application() {
     lateinit var voiceManager: VoiceManager
         private set
 
+    lateinit var billingManager: com.example.data.billing.BillingManager
+        private set
+
     override fun onCreate() {
         super.onCreate()
         instance = this
@@ -67,6 +70,7 @@ class AISmartApp : Application() {
         usageQuotaManager = UsageQuotaManager(this)
         adminRepository = AdminRepository(this)
         authRepository = AuthRepository(this, database.userProfileDao())
+        billingManager = com.example.data.billing.BillingManager(this, usageQuotaManager, authRepository)
         chatRepository = ChatRepository(database.conversationDao(), database.chatMessageDao(), usageQuotaManager, adminRepository, knowledgeRepository)
         imageRepository = ImageRepository(this, database.generatedImageDao(), usageQuotaManager, adminRepository)
         voiceManager = VoiceManager(this)

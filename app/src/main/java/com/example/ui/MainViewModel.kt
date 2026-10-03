@@ -33,12 +33,20 @@ class MainViewModel : ViewModel() {
     private val adminRepo = app.adminRepository
     private val voiceMgr = app.voiceManager
     private val knowledgeRepo = app.knowledgeRepository
+    private val billingMgr = app.billingManager
 
     val currentUser: StateFlow<UserProfile?> = authRepo.currentUser
 
     val isPremium: StateFlow<Boolean> = quotaManager.isPremium
+    val credits: StateFlow<Int> = quotaManager.credits
+    val subscriptionPlan: StateFlow<String?> = quotaManager.subscriptionPlan
     val dailyMessagesUsed: StateFlow<Int> = quotaManager.dailyMessagesUsed
     val dailyImagesUsed: StateFlow<Int> = quotaManager.dailyImagesUsed
+
+    val billingProducts = billingMgr.products
+    val isBillingConnected = billingMgr.isConnected
+    val isPurchasing = billingMgr.isPurchasing
+    val billingMessage = billingMgr.billingMessage
 
     val adminStats: StateFlow<AdminStats> = adminRepo.stats
     val apiLogs: StateFlow<List<ApiLogEntry>> = adminRepo.apiLogs
@@ -170,7 +178,21 @@ class MainViewModel : ViewModel() {
                 convId = chatRepo.createNewConversation("محادثة جديدة")
                 selectConversation(convId)
             }
+
+            // Optimistic immediate UI update so user message and loading appear instantly
+            val optimisticMsg = ChatMessage(
+                id = System.currentTimeMillis(),
+                conversationId = convId,
+                role = MessageRole.USER,
+                content = cleanPrompt,
+                attachmentPath = attachmentUri?.toString(),
+                attachmentName = attachmentName,
+                attachmentType = attachmentType,
+                timestamp = System.currentTimeMillis()
+            )
+            _messages.value = _messages.value + optimisticMsg
             _isChatLoading.value = true
+
             chatRepo.sendMessage(
                 conversationId = convId,
                 prompt = cleanPrompt,
@@ -337,6 +359,23 @@ class MainViewModel : ViewModel() {
         viewModelScope.launch {
             knowledgeRepo.refreshFromWeb(item)
         }
+    }
+
+    // Google Play Billing Actions
+    fun purchaseProduct(activity: android.app.Activity, productId: String) {
+        billingMgr.launchPurchaseFlow(activity, productId)
+    }
+
+    fun restorePurchases(onComplete: ((Boolean) -> Unit)? = null) {
+        billingMgr.restorePurchases(onComplete)
+    }
+
+    fun openManageSubscriptions(activity: android.app.Activity) {
+        billingMgr.openManageSubscriptions(activity)
+    }
+
+    fun clearBillingMessage() {
+        billingMgr.clearMessage()
     }
 
     override fun onCleared() {

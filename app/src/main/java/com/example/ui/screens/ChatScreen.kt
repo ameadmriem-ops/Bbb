@@ -15,12 +15,16 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -73,6 +77,7 @@ import com.example.util.FileAnalyzerHelper
 import kotlinx.coroutines.launch
 import java.util.Locale
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ChatScreen(
     conversation: Conversation?,
@@ -168,10 +173,20 @@ fun ChatScreen(
         }
     }
 
+    val isImeVisible = WindowInsets.isImeVisible
+
+    // Scroll to latest message when keyboard opens or message list changes
+    LaunchedEffect(isImeVisible, messages.size) {
+        if (messages.isNotEmpty()) {
+            listState.animateScrollToItem(messages.size - 1)
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            .imePadding()
     ) {
         // Broadcast banner if present
         if (broadcastMessage.isNotBlank()) {
@@ -201,7 +216,7 @@ fun ChatScreen(
         }
 
         // Messages or Empty Welcome State
-        if (messages.isEmpty()) {
+        if (messages.isEmpty() && !isLoading) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()

@@ -25,15 +25,44 @@ class UsageQuotaManager(context: Context) {
     private val _dailyImagesUsed = MutableStateFlow(0)
     val dailyImagesUsed: StateFlow<Int> = _dailyImagesUsed.asStateFlow()
 
+    private val _credits = MutableStateFlow(prefs.getInt(KEY_CREDITS, 25))
+    val credits: StateFlow<Int> = _credits.asStateFlow()
+
+    private val _subscriptionPlan = MutableStateFlow<String?>(prefs.getString(KEY_SUB_PLAN, null))
+    val subscriptionPlan: StateFlow<String?> = _subscriptionPlan.asStateFlow()
+
     init {
         checkDateReset()
         _dailyMessagesUsed.value = prefs.getInt(KEY_MESSAGES_COUNT, 0)
         _dailyImagesUsed.value = prefs.getInt(KEY_IMAGES_COUNT, 0)
+        _credits.value = prefs.getInt(KEY_CREDITS, 25)
+        _subscriptionPlan.value = prefs.getString(KEY_SUB_PLAN, null)
     }
 
-    fun setPremium(premium: Boolean) {
-        prefs.edit().putBoolean(KEY_IS_PREMIUM, premium).apply()
+    fun setPremium(premium: Boolean, plan: String? = null) {
+        prefs.edit()
+            .putBoolean(KEY_IS_PREMIUM, premium)
+            .putString(KEY_SUB_PLAN, if (premium) plan else null)
+            .apply()
         _isPremium.value = premium
+        _subscriptionPlan.value = if (premium) plan else null
+    }
+
+    fun addCredits(amount: Int) {
+        val updated = _credits.value + amount
+        prefs.edit().putInt(KEY_CREDITS, updated).apply()
+        _credits.value = updated
+    }
+
+    fun consumeCredit(amount: Int = 1): Boolean {
+        if (_isPremium.value) return true
+        if (_credits.value >= amount) {
+            val updated = _credits.value - amount
+            prefs.edit().putInt(KEY_CREDITS, updated).apply()
+            _credits.value = updated
+            return true
+        }
+        return false
     }
 
     fun canSendMessage(maxFree: Int = 20): Boolean {
@@ -87,5 +116,7 @@ class UsageQuotaManager(context: Context) {
         private const val KEY_MESSAGES_COUNT = "daily_messages_count"
         private const val KEY_IMAGES_COUNT = "daily_images_count"
         private const val KEY_LAST_DATE = "last_date_key"
+        private const val KEY_CREDITS = "user_credits_balance"
+        private const val KEY_SUB_PLAN = "user_subscription_plan"
     }
 }
